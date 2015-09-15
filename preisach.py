@@ -1,7 +1,8 @@
 import numpy as np
 import scipy as sp
 import scipy.interpolate as ip
-import itertools, functools, operator
+import matplotlib.pyplot as plt
+import itertools, functools, collections, operator
 
 class Triangular:
     pass
@@ -95,18 +96,22 @@ data.size = {self.shape}".format(**locals())
             np.array,
             zip(*self.points_values4integral_func())
             )
-        basefunc = ip.CloughTocher2DInterpolator(points, values)
+        
+        #basefunc = ip.CloughTocher2DInterpolator(points, values)
+        basefunc = lambda x : x
 
         def integral_func(xu, xd):
-            if xu >= xd:
-                try:
+            if xu > xd:
+                if self.max_x - xd:
                     xu_ = (xu - xd) * self.dist_x / (self.max_x - xd)
                     xu_ += self.min_x
-                except ZeroDivisionError:
+                else:
                     xu_ = self.min_x
                 return 0 + basefunc(xu_, xd)
+            elif xu == xd:
+                return 0 + basefunc(self.min_x,   xd)
             else:#xu < xd
-                return 0 + basefunc(0, xu)
+                return 0 + basefunc(self.min_x,   xu)
         return integral_func 
 
     def __call__(self, x):
@@ -115,25 +120,32 @@ data.size = {self.shape}".format(**locals())
 [{self.min_x}, {self.max_x}] got {x}".format(**locals()))
 
         if self.last_x < x:
-            if not self.edges:
-                self.edges.append(PreisachEdge((x, self.max_x), +1))
-            else:
-                new_edges = []
-                for edge in self.edges:
-                    if x < edge.pos[0]:
-                        new_edge.append(edge)
-                new_edges.append(PreisachEdge((x, self.max_x), +1))
-                self.edges = new_edges
+            new_edges = []
+            xd_ = self.min_x
+            for edge in self.edges:
+                if x < edge.pos.xu:
+                    xd_ = edge.pos.xd
+                    new_edges.append(edge)
+                else:# edge.pos.xu <= x
+                    pass
+            if not xd_ == self.min_x:
+                new_edges.append(PreisachEdge((x, xd_),      -1))
+            new_edges.append(PreisachEdge((x, self.max_x),  +1))
+            self.edges = new_edges
         elif x < self.last_x:
             new_edges = []
+            xu_ = None
             for edge in self.edges:
-                if edge.pos[1] < x:
-                    new_edge.append(edge)
-            new_edges[-1].pos[1] = x
+                if edge.pos.xd < x:
+                    new_edges.append(edge)
+                    xu_ = edge.pos.xu 
+                else:# x <= edge.pos.xd
+                    if xu_ == None:
+                        xu_ = edge.pos.xu
+            if not xu_ is None and x != 0:
+                new_edges.append(PreisachEdge((xu_, x), +1))
             self.edges = new_edges
         
-        
-        print(self.edges)
         integral_func = self.get_integral_func()
 
         self.last_x = x
@@ -161,24 +173,61 @@ data.size = {self.shape}".format(**locals())
 
 
 class PreisachEdge():
+    Position = collections.namedtuple("Position", "xu, xd")
     def __init__(self, pos, sign):
-        self.pos    = pos
+        self.pos    = self.Position(*pos)
         self.sign   = sign
 
     def __repr__(self):
         return "{self.__class__.__name__} object {self.sign}, {self.pos}"\
                .format(**locals())
 
-if __name__ == "__main__":
-    a = Preisach(
-        [
-            [1,2,3],
-            [0,4,5],
-            [0,0,6],
-            ],
-        range_x = (-1, 1)
-        )
+def test(preisach, N = 10, dx = 0.05):
+    sumples = []
+    for i in range(N, -1, -1):
+        propotion = i / N
+        sumples.extend([preisach.min_x,
+                        preisach.min_x + propotion * preisach.dist_x])
+    sumples = np.array(sumples) // dx * dx
+    
+    def xlist_gen():
+        for i, j in zip(sumples, sumples[1:]):
+            result = []
+            if i < j:
+                while i < j:
+                    result.append(i)
+                    i += dx
+            elif i > j:
+                while  i > j:
+                    result.append(i)
+                    i -= dx
+            yield result
+            
+    for xlist in xlist_gen():        
+        points  = np.array(tuple(xlist))
+        results = np.array(tuple(map(preisach, xlist)))
+        plt.plot(points, results)
+    plt.show()
+    return sumples, points, results
+    
 
-    b = a.get_integral_func()
+
+if __name__ == "__main__":
+    example = Preisach(
+        [
+            [1,1,1,1,1],
+            [0,1,1,1,1],
+            [0,0,1,1,1],
+            [0,0,0,1,1],
+            [0,0,0,0,1]
+            ],
+        range_x = (0, 10)
+        )
+    test(example)
+
+
+    
+
+    
 
 find = lambda name, obj : ["{1}".format(obj, i) for i in dir(obj) if name in i]
