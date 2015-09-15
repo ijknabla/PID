@@ -2,16 +2,7 @@ import numpy as np
 import scipy as sp
 import scipy.interpolate as ip
 import matplotlib.pyplot as plt
-import itertools, functools, collections, operator
-
-class Triangular:
-    pass
-
-class LowwerTriangular(Triangular):
-    pass
-
-class UpperTriangular(Triangular):
-    pass
+import itertools, functools, collections
 
 class Preisach(np.matrix):
     def __new__(cls,
@@ -98,9 +89,11 @@ data.size = {self.shape}".format(**locals())
             )
         
         #basefunc = ip.CloughTocher2DInterpolator(points, values)
-        basefunc = lambda x : x
+        basefunc = ip.LinearNDInterpolator(points, values)
+        self.base_func = lambda x,y : basefunc((x,y)) + 0
 
         def integral_func(xu, xd):
+            #xu, xd -> xu_, xd need to refactoring
             if xu > xd:
                 if self.max_x - xd:
                     xu_ = (xu - xd) * self.dist_x / (self.max_x - xd)
@@ -112,6 +105,7 @@ data.size = {self.shape}".format(**locals())
                 return 0 + basefunc(self.min_x,   xd)
             else:#xu < xd
                 return 0 + basefunc(self.min_x,   xu)
+        self.integral_func = integral_func
         return integral_func 
 
     def __call__(self, x):
@@ -120,57 +114,42 @@ data.size = {self.shape}".format(**locals())
 [{self.min_x}, {self.max_x}] got {x}".format(**locals()))
 
         if self.last_x < x:
-            new_edges = []
-            xd_ = self.min_x
-            for edge in self.edges:
-                if x < edge.pos.xu:
-                    xd_ = edge.pos.xd
-                    new_edges.append(edge)
-                else:# edge.pos.xu <= x
-                    pass
-            if not xd_ == self.min_x:
-                new_edges.append(PreisachEdge((x, xd_),      -1))
-            new_edges.append(PreisachEdge((x, self.max_x),  +1))
-            self.edges = new_edges
+            self.edges = list(self.up_edges_gen(x))
         elif x < self.last_x:
-            new_edges = []
-            xu_ = None
-            for edge in self.edges:
-                if edge.pos.xd < x:
-                    new_edges.append(edge)
-                    xu_ = edge.pos.xu 
-                else:# x <= edge.pos.xd
-                    if xu_ == None:
-                        xu_ = edge.pos.xu
-            if not xu_ is None and x != 0:
-                new_edges.append(PreisachEdge((xu_, x), +1))
-            self.edges = new_edges
+            self.edges = list(self.down_edges_gen(x))
         
         integral_func = self.get_integral_func()
 
         self.last_x = x
+        #print(self.last_x, self.edges)
+        #if self.edges:
+        #    print(">>>", self.integral_func(*self.edges[-1].pos))
         return sum(edge.sign * integral_func(*edge.pos)
                    for edge in self.edges)
-        """
-        index, rest = self.getindex(x)
-        print("index =", index)
-        if index < self.last_index:
-            self.mask[index:self.last_index+1].fill(False)
-        elif self.last_index < index:
-            self.mask[:,:index].fill(True)
-        self.last_index = index
 
-        return self.sum_by_mask()
-        
-    def sum_by_mask(self):
-        return np.sum(self.getA() * self.mask)
+    def up_edges_gen(self, xu):
+        xd_ = self.min_x
+        for edge in self.edges:
+            if xu < edge.pos.xu:
+                xd_ = edge.pos.xd
+                yield edge
+            else:# edge.pos.xu <= xu
+                pass
+        if not xd_ == self.min_x:
+            yield PreisachEdge((xu, xd_), -1)
+        yield PreisachEdge((xu, self.max_x), +1)
 
-    def getindex(self, x):
-        div_mod = np.array(divmod(x - self.min_x, self.dist_x))
-        div_mod += (1, -1) if round(div_mod[1]) == 1 else (0, 0)
-        return int(div_mod[0]), div_mod[1]
-    """
-
+    def down_edges_gen(self, xd):
+        xu_ = None
+        for edge in self.edges:
+            if edge.pos.xd < xd:
+                yield edge
+                xu_ = edge.pos.xu 
+            else:# xd <= edge.pos.xd
+                if xu_ == None:
+                    xu_ = edge.pos.xu
+        if not (xu_ is None or xd == self.min_x):
+            yield PreisachEdge((xu_, xd), +1)
 
 class PreisachEdge():
     Position = collections.namedtuple("Position", "xu, xd")
@@ -182,37 +161,37 @@ class PreisachEdge():
         return "{self.__class__.__name__} object {self.sign}, {self.pos}"\
                .format(**locals())
 
-def test(preisach, N = 10, dx = 0.05):
-    sumples = []
-    for i in range(N, -1, -1):
-        propotion = i / N
-        sumples.extend([preisach.min_x,
-                        preisach.min_x + propotion * preisach.dist_x])
-    sumples = np.array(sumples) // dx * dx
-    
-    def xlist_gen():
-        for i, j in zip(sumples, sumples[1:]):
-            result = []
-            if i < j:
-                while i < j:
-                    result.append(i)
-                    i += dx
-            elif i > j:
-                while  i > j:
-                    result.append(i)
-                    i -= dx
-            yield result
-            
-    for xlist in xlist_gen():        
-        points  = np.array(tuple(xlist))
-        results = np.array(tuple(map(preisach, xlist)))
-        plt.plot(points, results)
-    plt.show()
-    return sumples, points, results
-    
 
-
+#testcode
 if __name__ == "__main__":
+    def test(preisach, N = 10, dx = 0.05):
+        sumples = []
+        for i in range(N, -1, -1):
+            propotion = i / N
+            sumples.extend([preisach.min_x,
+                            preisach.min_x + propotion * preisach.dist_x])
+        sumples = np.array(sumples) // dx * dx
+        
+        def xlist_gen():
+            for i, j in zip(sumples, sumples[1:]):
+                result = []
+                if i < j:
+                    while i < j:
+                        result.append(i)
+                        i += dx
+                elif i > j:
+                    while  i > j:
+                        result.append(i)
+                        i -= dx
+                yield result
+            
+        for xlist in xlist_gen():
+            points  = np.array(tuple(xlist))
+            results = np.array(tuple(map(preisach, xlist)))
+            plt.plot(points, results)
+        plt.show()
+        return sumples, points, results
+    
     example = Preisach(
         [
             [1,1,1,1,1],
@@ -224,10 +203,3 @@ if __name__ == "__main__":
         range_x = (0, 10)
         )
     test(example)
-
-
-    
-
-    
-
-find = lambda name, obj : ["{1}".format(obj, i) for i in dir(obj) if name in i]
