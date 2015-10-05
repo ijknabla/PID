@@ -1,0 +1,84 @@
+<body bgcolor="#f0f0f8">
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#6622aa">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong>TypeError</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial">Python 3.4.1: C:\Python34\pythonw.exe<br>Mon Oct  5 18:04:02 2015</font></td></tr></table>
+    
+<p>A problem occurred in a Python script.  Here is the sequence of
+function calls leading up to the error, in the order they occurred.</p>
+<table width="100%" cellspacing=0 cellpadding=0 border=0>
+<tr><td bgcolor="#d8bbff"><big>&nbsp;</big><a href="file://C:\Users\Dandelion\Documents\Python\PID\testcode.py">C:\Users\Dandelion\Documents\Python\PID\testcode.py</a> in <strong><module></strong>()</td></tr>
+<tr><td><font color="#909090"><tt>&nbsp;&nbsp;<small>&nbsp;&nbsp;&nbsp;&nbsp;3</small>&nbsp;<br>
+</tt></font></td></tr>
+<tr><td><font color="#909090"><tt>&nbsp;&nbsp;<small>&nbsp;&nbsp;&nbsp;&nbsp;4</small>&nbsp;try:<br>
+</tt></font></td></tr>
+<tr><td bgcolor="#ffccee"><tt>=&gt;<small>&nbsp;&nbsp;&nbsp;&nbsp;5</small>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;import&nbsp;DAQlib<br>
+</tt></td></tr>
+<tr><td><font color="#909090"><tt>&nbsp;&nbsp;<small>&nbsp;&nbsp;&nbsp;&nbsp;6</small>&nbsp;except&nbsp;Exception&nbsp;as&nbsp;e:<br>
+</tt></font></td></tr>
+<tr><td><font color="#909090"><tt>&nbsp;&nbsp;<small>&nbsp;&nbsp;&nbsp;&nbsp;7</small>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sys.excepthook(*sys.exc_info())<br>
+</tt></font></td></tr>
+<tr><td><small><font color="#909090">DAQlib <em>undefined</em></font></small></td></tr></table>
+<table width="100%" cellspacing=0 cellpadding=0 border=0>
+<tr><td bgcolor="#d8bbff"><big>&nbsp;</big><a href="file://C:\Users\Dandelion\Documents\Python\PID\DAQlib.py">C:\Users\Dandelion\Documents\Python\PID\DAQlib.py</a> in <strong><module></strong>()</td></tr>
+<tr><td><font color="#909090"><tt>&nbsp;&nbsp;<small>&nbsp;&nbsp;190</small>&nbsp;<br>
+</tt></font></td></tr>
+<tr><td><font color="#909090"><tt>&nbsp;&nbsp;<small>&nbsp;&nbsp;191</small>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;task.CreateAOVoltageChan(0,&nbsp;10)<br>
+</tt></font></td></tr>
+<tr><td><font color="#909090"><tt>&nbsp;&nbsp;<small>&nbsp;&nbsp;192</small>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#task.CreateAOFuncGenChan("Triangle",&nbsp;100,&nbsp;1,&nbsp;2)<br>
+</tt></font></td></tr>
+<tr><td><font color="#909090"><tt>&nbsp;&nbsp;<small>&nbsp;&nbsp;193</small>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;task.CfgSampClkTiming(1000)<br>
+</tt></font></td></tr>
+<tr><td bgcolor="#ffccee"><tt>=&gt;<small>&nbsp;&nbsp;194</small>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;task.WriteAnalogF64(range(10))<br>
+</tt></td></tr>
+<tr><td><small><font color="#909090"><strong>task</strong>&nbsp;= MyTask_AIO_F64(device = Dev1, AOChan = ao0, AIChan = ai0), task.<strong>WriteAnalogF64</strong>&nbsp;= &lt;bound method MyTask_AIO_F64.WriteAnalogF64 of M...O_F64(device = Dev1, AOChan = ao0, AIChan = ai0)&gt;, <em>builtin</em> <strong>range</strong>&nbsp;= &lt;class 'range'&gt;</font></small></td></tr></table>
+<table width="100%" cellspacing=0 cellpadding=0 border=0>
+<tr><td bgcolor="#d8bbff"><big>&nbsp;</big><a href="file://C:\Users\Dandelion\Documents\Python\PID\DAQlib.py">C:\Users\Dandelion\Documents\Python\PID\DAQlib.py</a> in <strong><module></strong>()</td></tr>
+<tr><td><font color="#909090"><tt>&nbsp;&nbsp;<small>&nbsp;&nbsp;189</small>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;AOChan&nbsp;=&nbsp;"ao0")&nbsp;as&nbsp;task:<br>
+</tt></font></td></tr>
+<tr><td><font color="#909090"><tt>&nbsp;&nbsp;<small>&nbsp;&nbsp;190</small>&nbsp;<br>
+</tt></font></td></tr>
+<tr><td bgcolor="#ffccee"><tt>=&gt;<small>&nbsp;&nbsp;191</small>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;task.CreateAOVoltageChan(0,&nbsp;10)<br>
+</tt></td></tr>
+<tr><td><font color="#909090"><tt>&nbsp;&nbsp;<small>&nbsp;&nbsp;192</small>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#task.CreateAOFuncGenChan("Triangle",&nbsp;100,&nbsp;1,&nbsp;2)<br>
+</tt></font></td></tr>
+<tr><td><font color="#909090"><tt>&nbsp;&nbsp;<small>&nbsp;&nbsp;193</small>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;task.CfgSampClkTiming(1000)<br>
+</tt></font></td></tr>
+<tr><td><small><font color="#909090"><strong>task</strong>&nbsp;= MyTask_AIO_F64(device = Dev1, AOChan = ao0, AIChan = ai0), task.<strong>CreateAOVoltageChan</strong>&nbsp;= &lt;bound method MyTask_AIO_F64.CreateAOVoltageChan...O_F64(device = Dev1, AOChan = ao0, AIChan = ai0)&gt;</font></small></td></tr></table>
+<table width="100%" cellspacing=0 cellpadding=0 border=0>
+<tr><td bgcolor="#d8bbff"><big>&nbsp;</big><a href="file://C:\Users\Dandelion\Documents\Python\PID\DAQlib.py">C:\Users\Dandelion\Documents\Python\PID\DAQlib.py</a> in <strong>wrapped</strong>(self=MyTask_AIO_F64(device = Dev1, AOChan = ao0, AIChan = ai0), *args=(0, 10), **kwrds={})</td></tr>
+<tr><td><font color="#909090"><tt>&nbsp;&nbsp;<small>&nbsp;&nbsp;&nbsp;29</small>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;print(varnames,&nbsp;meth)<br>
+</tt></font></td></tr>
+<tr><td><font color="#909090"><tt>&nbsp;&nbsp;<small>&nbsp;&nbsp;&nbsp;30</small>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return&nbsp;super_meth(*[varsdict[varname]<br>
+</tt></font></td></tr>
+<tr><td bgcolor="#ffccee"><tt>=&gt;<small>&nbsp;&nbsp;&nbsp;31</small>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for&nbsp;varname&nbsp;in&nbsp;varnames])<br>
+</tt></td></tr>
+<tr><td><font color="#909090"><tt>&nbsp;&nbsp;<small>&nbsp;&nbsp;&nbsp;32</small>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return&nbsp;wrapped<br>
+</tt></font></td></tr>
+<tr><td><font color="#909090"><tt>&nbsp;&nbsp;<small>&nbsp;&nbsp;&nbsp;33</small>&nbsp;<br>
+</tt></font></td></tr>
+<tr><td><small><font color="#909090">varname <em>undefined</em>, <strong>varnames</strong>&nbsp;= ('minval', 'maxval', 'units', 'customscalename', 'nametoassigntochannel', 'physicalchannel', 'nametoassingntochannel')</font></small></td></tr></table><p><strong>TypeError</strong>: CreateAOVoltageChan() takes 7 positional arguments but 8 were given
+<br><tt><small>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</small>&nbsp;</tt>args&nbsp;=
+('CreateAOVoltageChan() takes 7 positional arguments but 8 were given',)
+<br><tt><small>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</small>&nbsp;</tt>with_traceback&nbsp;=
+&lt;built-in method with_traceback of TypeError object&gt;
+
+
+<!-- The above is a description of an error in a Python program, formatted
+     for a Web browser because the 'cgitb' module was enabled.  In case you
+     are not reading this in a Web browser, here is the original traceback:
+
+Traceback (most recent call last):
+  File "C:\Users\Dandelion\Documents\Python\PID\testcode.py", line 5, in &lt;module&gt;
+    import DAQlib
+  File "C:\Users\Dandelion\Documents\Python\PID\DAQlib.py", line 194, in &lt;module&gt;
+    task.WriteAnalogF64(range(10))
+  File "C:\Users\Dandelion\Documents\Python\PID\DAQlib.py", line 191, in &lt;module&gt;
+    task.CreateAOVoltageChan(0, 10)
+  File "C:\Users\Dandelion\Documents\Python\PID\DAQlib.py", line 31, in wrapped
+    for varname in varnames])
+TypeError: CreateAOVoltageChan() takes 7 positional arguments but 8 were given
+
+-->
