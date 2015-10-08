@@ -1,42 +1,10 @@
 import PyDAQmx  as PDm
 import numpy    as np
 import contextlib, collections, functools, sys, inspect
+import threading
 from prefixedunit import VoltageFloat
+from argstools import *
 
-def defaultargs_methodwrapper(meth):
-    methname = meth.__name__
-    
-    #@functools.wraps(meth)
-    def wrapped(self, *args, **kwrds):
-        nonlocal methname
-        print(meth, args, kwrds)
-        cls = self.__class__ if not isinstance(self, type) else self
-        super_ = super(cls, self)
-        super_meth = getattr(super_, methname)
-
-        try:
-            argspec = inspect.getfullargspec(super_meth)
-        except:
-            argspec = None
-            raise
-        
-        argsname = argspec.args #[self, arg0, arg1, ...]
-        argsname = argsname[1:] #[arg0, arg1, ...      ]
-        
-        kwargsname = argspec.kwonlyargs
-        kwargsname = kwargsname if kwargsname is not None else []
-
-        print("yeah")
-        varsdict = meth(self, *args, **kwrds)
-
-        try:
-            return super_meth(
-                *(varsdict[arg] for arg in argsname),
-                **dict((arg, varsdict[arg]) for arg in kwargsname)
-                )
-        except:
-            raise
-    return wrapped
 
 def ReadTask(task, num):
     read = PDm.int32()
@@ -63,7 +31,7 @@ class AIO_Interface():
                        ):
         sampsPerChanWritten = PDm.int32()
         reserved = None
-        result = super().WriteAnalogF64(numSampsPerChan,
+        super().WriteAnalogF64(numSampsPerChan,
                                autoStart,
                                timeout,
                                dataLayout,
@@ -84,18 +52,32 @@ class AIO_Interface():
         readArray = np.zeros((numSampsPerChan,), dtype = np.float64)
         sampsPerChanRead = PDm.int32()
         reserved = None
-        super().ReadAnalogF64(
-            self,
-            numSampsPerChan,
-            timeout,
-            fillMode,
-            readArray,
-            arraySizeInSamps,
-            sampsPerChanRead,
-            reserved)
-        return readArray, sampsPerChanRead.value
+        super().ReadAnalogF64(numSampsPerChan,
+                              timeout,
+                              fillMode,
+                              readArray,
+                              arraySizeInSamps,
+                              PDm.byref(sampsPerChanRead),
+                              reserved)
+        return readArray[:sampsPerChanRead.value]
 
+@argssetter
 class AIO_Base(AIO_Interface, PDm.Task):
+    def __init__(self, *args, **kwrds):
+        super().__init__()
+        self.attrs = []
+        for attr, value in kwrds.items():
+            self.attrs.append(attr)
+            setattr(self, attr, value)
+
+    
+    def __repr__(self):
+        return "{self.__class__.__name__}({})".format(
+            ", ".join("{} = {}".format(attr, getattr(self, attr))
+                      for attr in self.attrs),
+            **locals()
+            )
+    
     def __enter__(self):
         print("open  task ->", self)
         return self
@@ -119,27 +101,14 @@ class AIO_Base(AIO_Interface, PDm.Task):
                 )
             )
         if name not in selector:
-            raise NameError("Val(given is {name})must be within {selector}"\
+            raise NameError("Val(given is {name})must be in {selector}"\
                             .format(**vars()))
         try:
             return self.getVal(name)
         except:
             raise
 
-    attrs = set()
-    def __init__(self, *args, **kwrds):
-        super().__init__()
-        for attr, value in kwrds.items():
-            self.attrs.add(attr)
-            setattr(self, attr, value)
-
     
-    def __repr__(self):
-        return "{self.__class__.__name__}({})".format(
-            ", ".join("{} = {}".format(attr, getattr(self, attr))
-                      for attr in self.attrs),
-            **locals()
-            )
 
     def getpysicalChannel(self, name):
         if name.lower() == "ai":
@@ -147,7 +116,7 @@ class AIO_Base(AIO_Interface, PDm.Task):
         elif name.lower() == "ao":
             return "{self.device}/{self.AOChan}".format(**vars())    
 
-    @defaultargs_methodwrapper
+    @argsdescriptor
     def CfgSampClkTiming(self, rate, *,
                          #defaultarguement
                          source = None,
@@ -159,11 +128,11 @@ class AIO_Base(AIO_Interface, PDm.Task):
             
 
 
-
+@argssetter
 class AO_F64(AIO_Base):
     
 
-    @defaultargs_methodwrapper
+    @argsdescriptor
     def CreateAOVoltageChan(self, minVal, maxVal, *,
                             units = "Volts",
                             customScaleName = None,
@@ -178,7 +147,7 @@ class AO_F64(AIO_Base):
         return vars()
         
 
-    @defaultargs_methodwrapper
+    @argsdescriptor
     def CreateAOFuncGenChan(self, type, freq, amplitude, offset, *, 
                             nameToAssignToChannel = None):
         types = "Sine,Triangle,Sawtooth,Square".split(",")
@@ -192,7 +161,7 @@ class AO_F64(AIO_Base):
                                      .format(**vars())
         return vars()
 
-    @defaultargs_methodwrapper
+    @argsdescriptor
     def WriteAnalogF64(self, writeArray, *,
                        autoStart = True,
                        timeout = -1,
@@ -211,18 +180,36 @@ class AO_F64(AIO_Base):
     def write(self, data):
         return self.WriteAnalogF64(data)
 
-
+@argssetter
 class AI_F64(AIO_Base):
-    @defaultargs_methodwrapper
+
+    @argsdescriptor
+    def CreateAIVoltageChan(self, minVal, maxVal, *,
+                            units = "Volts",
+                            customScaleName = None,
+                            terminalConfig = "Cfg_Default",
+                            nameToAssignToChannel = None):
+        terminalConfig = self.selectVal(
+            "Cfg_Default, RSE, NRSE, Diff, PseudoDiff", terminalConfig)
+        units = self.selectVal("Volts, FromCustomScale", units)
+        
+        physicalChannel = self.getpysicalChannel("AI")
+        if nameToAssignToChannel is None:
+            nameToAssingnToChannel = "Analog Output of {self}"\
+                                     .format(**vars())
+        return vars()
+
+    
+    @argsdescriptor
     def ReadAnalogF64(self, numSampsPerChan,  *,
                       timeout = -1,
-                      fillmode = "GroupByChannel",
+                      fillMode = "GroupByChannel",
                       #readArray,
                       arraySizeInSamps = None
                       #sampsPerChanRead,
                       #reserved,
                       ):
-        fillmode = selectVal("GroupByChannel, GroupByScanNumber", fillmode)
+        fillMode = self.selectVal("GroupByChannel, GroupByScanNumber", fillMode)
         if arraySizeInSamps is None:
             arraySizeInSamps = numSampsPerChan
         return vars()
@@ -230,4 +217,14 @@ class AI_F64(AIO_Base):
     def read(self, num):
         return self.ReadAnalogF64(num)
 
-class AIO_F64(AI_F64, AO_F64):pass
+class AIO_F64(AI_F64, AO_F64):
+    def readwrite(self, data):
+        num = len(data)
+        writeT = threading.Thread(target = self.write, args = (data,))
+        readT  = threading.Thread(target = self.read,  args = (num,) )
+        writeT.start()
+        readT.start()
+        writeT.join()
+        return readT.join()
+        
+        
